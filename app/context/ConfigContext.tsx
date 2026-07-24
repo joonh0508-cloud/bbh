@@ -12,7 +12,7 @@ export interface ConfigState {
 }
 
 const defaultConfig: ConfigState = {
-  mainTitle: "수학이 쉬워지는 시간",
+  mainTitle: "수학을 좋아하게 될거야",
   subDescription: "선생님과 학생 모두를 위한 직관적이고 깔끔한 학습 플랫폼입니다. 필요한 기능을 마음껏 추가해 보세요.",
   tab1Name: "거리·속력·시간",
   tab2Name: "소금물의 농도",

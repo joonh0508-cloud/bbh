@@ -24,12 +24,12 @@ export default function Home() {
           <Link href="/programs" className="text-sm font-medium text-[#0066cc] hover:text-blue-700 cursor-pointer transition-colors duration-200">
             수학 프로그램
           </Link>
-          <div className="text-sm text-gray-500 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
-            소개
-          </div>
-          <div className="text-sm text-gray-500 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
-            학습하기
-          </div>
+          <Link href="/board" className="text-sm text-gray-500 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
+            자료실
+          </Link>
+          <button onClick={() => setIsSettingsOpen(true)} className="text-sm text-gray-500 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
+            설정
+          </button>
         </nav>
       </header>
 
@@ -37,7 +37,7 @@ export default function Home() {
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-20 flex flex-col items-center justify-center text-center">
         {/* 환영 인사 뱃지 */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-[#0066cc] text-sm font-medium mb-8 shadow-sm">
-          <span>새로운 교육 환경의 시작</span>
+          <span>채채의 수학 창고</span>
         </div>
 
         {/* 메인 타이틀 (동적) */}
@@ -50,21 +50,7 @@ export default function Home() {
           {config.subDescription}
         </p>
 
-        {/* 기능 버튼들 */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
-          <Link href="/programs" className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-[#1d1d1f] hover:bg-gray-800 text-white rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
-            <span>시작하기</span>
-            <ChevronRight className="w-4 h-4" />
-          </Link>
-          
-          <button 
-            onClick={() => setIsSettingsOpen(true)}
-            className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-white/80 hover:bg-white text-[#1d1d1f] border border-gray-200 rounded-2xl shadow-sm backdrop-blur-md transition-all duration-300 transform hover:scale-[1.02]"
-          >
-            <Settings className="w-4 h-4 text-gray-500" />
-            <span>설정</span>
-          </button>
-        </div>
+        {/* 기능 버튼들이 있던 자리 (삭제됨) */}
       </main>
 
       {/* 하단 푸터 영역 */}
