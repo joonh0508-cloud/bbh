@@ -3,14 +3,21 @@ import OpenAI from "openai";
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const rawKey = process.env.OPENAI_API_KEY || "";
+    // 작은따옴표/큰따옴표/공백 제거
+    const apiKey = rawKey.trim().replace(/^['"]|['"]$/g, "");
 
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: "OPENAI_API_KEY 환경변수가 설정되지 않았습니다. Vercel 또는 .env.local 환경변수에 OPENAI_API_KEY를 등록해 주세요.",
+          reply:
+            "⚠️ **OPENAI_API_KEY 환경변수가 설정되지 않았습니다.**\n\n" +
+            "**[해결 방법]**\n" +
+            "1. Vercel 대시보드 ➡️ 해당 프로젝트 ➡️ **Settings** ➡️ **Environment Variables** 메뉴로 이동합니다.\n" +
+            "2. Key에 `OPENAI_API_KEY`, Value에 OpenAI API 키(`sk-...`)를 등록합니다.\n" +
+            "3. ⚠️ **중요**: 환경변수를 추가한 후 반드시 Vercel에서 **Redeploy(재배포)**를 실행하거나, 새로운 커밋을 push해야 서버에 환경변수가 주입됩니다!",
         },
-        { status: 500 }
+        { status: 200 }
       );
     }
 
@@ -34,10 +41,20 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ reply });
   } catch (error: any) {
-    console.error("OpenAI API error:", error);
-    return NextResponse.json(
-      { error: error?.message || "OpenAI API 호출 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+    console.error("OpenAI API Error Detail:", error);
+
+    let userFriendlyMsg = "OpenAI API 호출 중 오류가 발생했습니다.";
+
+    if (error?.status === 401 || error?.code === "invalid_api_key") {
+      userFriendlyMsg =
+        "⚠️ **유효하지 않은 OPENAI_API_KEY입니다.**\n\nOpenAI 대시보드(platform.openai.com)에서 발급받은 올바른 API 키(`sk-...`)인지 확인해 주세요.";
+    } else if (error?.status === 429 || error?.code === "insufficient_quota") {
+      userFriendlyMsg =
+        "⚠️ **OpenAI 계정 크레딧(잔액)이 부족하거나 사용량 제약이 발생했습니다.**\n\nOpenAI Billing 설정에서 결제 수단 및 잔액을 확인해 주세요.";
+    } else if (error?.message) {
+      userFriendlyMsg = `⚠️ **API 오류**: ${error.message}`;
+    }
+
+    return NextResponse.json({ reply: userFriendlyMsg }, { status: 200 });
   }
 }

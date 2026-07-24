@@ -3,14 +3,16 @@ import OpenAI from "openai";
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const rawKey = process.env.OPENAI_API_KEY || "";
+    const apiKey = rawKey.trim().replace(/^['"]|['"]$/g, "");
 
     if (!apiKey) {
       return NextResponse.json(
         {
-          error: "OPENAI_API_KEY 환경변수가 설정되지 않았습니다. Vercel 또는 환경변수에 OPENAI_API_KEY를 등록해 주세요.",
+          error:
+            "OPENAI_API_KEY 환경변수가 설정되지 않았거나 재배포가 필요합니다. Vercel Settings -> Environment Variables에서 OPENAI_API_KEY를 등록하고 Redeploy를 실행해 주세요.",
         },
-        { status: 500 }
+        { status: 400 }
       );
     }
 
@@ -65,7 +67,6 @@ export async function POST(req: Request) {
 
     const rawResponse = completion.choices[0]?.message?.content || "";
 
-    // JSON 파싱 (백틱 제거 등 안전하게 처리)
     let cleaned = rawResponse.trim();
     if (cleaned.startsWith("```json")) {
       cleaned = cleaned.replace(/^```json/, "").replace(/```$/, "").trim();
@@ -77,9 +78,14 @@ export async function POST(req: Request) {
     return NextResponse.json(parsed);
   } catch (error: any) {
     console.error("Problem generation API error:", error);
-    return NextResponse.json(
-      { error: error?.message || "문제 생성 중 오류가 발생했습니다." },
-      { status: 500 }
-    );
+
+    let msg = error?.message || "문제 생성 중 오류가 발생했습니다.";
+    if (error?.status === 401 || error?.code === "invalid_api_key") {
+      msg = "유효하지 않은 OPENAI_API_KEY입니다. Vercel 환경변수의 API 키(sk-...)를 확인해 주세요.";
+    } else if (error?.status === 429 || error?.code === "insufficient_quota") {
+      msg = "OpenAI 계정의 크레딧(잔액)이 부족합니다. platform.openai.com 결제 설정을 확인해 주세요.";
+    }
+
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
 }
