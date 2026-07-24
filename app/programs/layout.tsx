@@ -42,8 +42,8 @@ export default function ProgramsLayout({
           </div>
         </div>
 
-        {/* 탭 네비게이션 */}
-        <div className="max-w-5xl mx-auto px-6 flex items-center gap-6 overflow-x-auto no-scrollbar">
+        {/* 탭 네비게이션 (버튼 형태) */}
+        <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const isActive = pathname === tab.href;
             const isPlaceholder = tab.href !== "/programs/dst" && tab.href !== "/programs/saltwater";
@@ -52,11 +52,11 @@ export default function ProgramsLayout({
               <Link
                 key={tab.href}
                 href={isPlaceholder ? "#" : tab.href}
-                className={`py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap shadow-sm border ${
                   isActive
-                    ? "border-[#1d1d1f] text-[#1d1d1f]"
-                    : "border-transparent text-gray-400 hover:text-gray-600"
-                } ${isPlaceholder ? "cursor-not-allowed opacity-50" : ""}`}
+                    ? "bg-[#1d1d1f] text-white border-[#1d1d1f] shadow-md transform scale-[1.02]"
+                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:text-gray-900"
+                } ${isPlaceholder ? "cursor-not-allowed opacity-50 hover:bg-white hover:text-gray-600" : ""}`}
               >
                 {tab.name}
               </Link>
