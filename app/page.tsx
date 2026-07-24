@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ChevronRight, Settings } from "lucide-react";
 
 export default function Home() {
@@ -9,7 +10,9 @@ export default function Home() {
           채채의 수학
         </div>
         <nav className="flex items-center gap-4">
-          {/* 향후 메뉴가 들어갈 자리 */}
+          <Link href="/programs" className="text-sm font-medium text-[#0066cc] hover:text-blue-700 cursor-pointer transition-colors duration-200">
+            수학 프로그램
+          </Link>
           <div className="text-sm text-gray-500 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
             소개
           </div>
