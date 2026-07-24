@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { curriculumList, CurriculumData, GradeData, MajorUnit } from "@/lib/curriculumData";
-import { Sparkles, Download, BookOpen, Eye, EyeOff, CheckCircle2, AlertCircle } from "lucide-react";
+import { Sparkles, Download, BookOpen, Eye, EyeOff, CheckCircle2, AlertCircle, Key } from "lucide-react";
 
 interface Problem {
   id: number;
@@ -25,6 +25,27 @@ export default function ProblemGeneratorPage() {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [showAnswers, setShowAnswers] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+
+  const [userApiKey, setUserApiKey] = useState("");
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [tempKeyInput, setTempKeyInput] = useState("");
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem("user_openai_api_key");
+    if (savedKey) {
+      setUserApiKey(savedKey);
+      setTempKeyInput(savedKey);
+    }
+  }, []);
+
+  const handleSaveKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = tempKeyInput.trim();
+    setUserApiKey(cleanKey);
+    localStorage.setItem("user_openai_api_key", cleanKey);
+    setIsKeyModalOpen(false);
+    alert(cleanKey ? "API 키가 성공적으로 저장되었습니다!" : "API 키가 초기화되었습니다.");
+  };
 
   // 현재 선택된 교육과정 데이터
   const currentCurriculum: CurriculumData =
@@ -59,6 +80,7 @@ export default function ProblemGeneratorPage() {
           minorUnit: currentMinor,
           difficulty,
           count,
+          userApiKey,
         }),
       });
 
@@ -112,7 +134,6 @@ export default function ProblemGeneratorPage() {
       hwpContent += `  📝 풀이: ${p.solution}\n\n`;
     });
 
-    // 한글(HWP)과 호환되는 Blob 파일 생성 (.hwp 확장자)
     const blob = new Blob(["\ufeff" + hwpContent], {
       type: "text/plain;charset=utf-8",
     });
@@ -131,17 +152,31 @@ export default function ProblemGeneratorPage() {
     <div className="flex flex-col gap-8 bg-white p-6 md:p-10 rounded-3xl shadow-sm border border-gray-100">
       
       {/* 헤더 설명 영역 */}
-      <div className="text-center md:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-3">
-          <BookOpen className="w-3.5 h-3.5" />
-          AI 맞춤형 수학 문제 은행
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="text-center md:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-3">
+            <BookOpen className="w-3.5 h-3.5" />
+            AI 맞춤형 수학 문제 은행
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f] mb-2">
+            교육과정 단원별 문제 생성기
+          </h2>
+          <p className="text-gray-500 text-sm">
+            2015 & 2022 개정 교육과정 단원과 난이도를 선택하여 최대 30문제를 생성하고, 한글(HWP) 파일로 다운로드받으세요.
+          </p>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f] mb-2">
-          교육과정 단원별 문제 생성기
-        </h2>
-        <p className="text-gray-500">
-          2015 & 2022 개정 교육과정 단원과 난이도를 선택하여 최대 30문제를 생성하고, 한글(HWP) 파일로 다운로드받으세요.
-        </p>
+
+        <button
+          onClick={() => setIsKeyModalOpen(true)}
+          className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl border transition-colors self-center md:self-start shrink-0 ${
+            userApiKey
+              ? "bg-blue-50 text-blue-700 border-blue-200"
+              : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200"
+          }`}
+        >
+          <Key className="w-4 h-4" />
+          <span>{userApiKey ? "API 키 설정됨" : "🔑 API 키 직접 입력"}</span>
+        </button>
       </div>
 
       {/* 옵션 설정 카드 */}
@@ -174,7 +209,6 @@ export default function ProblemGeneratorPage() {
 
         {/* 학년 / 대단원 / 소단원 셀렉트 */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 학년 선택 */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-gray-500">학년 선택</label>
             <select
@@ -194,7 +228,6 @@ export default function ProblemGeneratorPage() {
             </select>
           </div>
 
-          {/* 대단원 선택 */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-gray-500">대단원 선택</label>
             <select
@@ -213,7 +246,6 @@ export default function ProblemGeneratorPage() {
             </select>
           </div>
 
-          {/* 소단원 선택 */}
           <div className="flex flex-col gap-1.5">
             <label className="text-xs font-semibold text-gray-500">소단원 선택</label>
             <select
@@ -232,8 +264,6 @@ export default function ProblemGeneratorPage() {
 
         {/* 난이도 & 문제 수 선택 */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-gray-200/60">
-          
-          {/* 난이도 선택 */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <span className="text-xs font-semibold text-gray-500">난이도</span>
             <div className="flex gap-2">
@@ -253,7 +283,6 @@ export default function ProblemGeneratorPage() {
             </div>
           </div>
 
-          {/* 문제 수 선택 */}
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <span className="text-xs font-semibold text-gray-500">문제 수</span>
             <div className="flex items-center gap-2">
@@ -268,7 +297,6 @@ export default function ProblemGeneratorPage() {
               <span className="text-sm font-bold text-blue-600 w-12 text-center">{count}문제</span>
             </div>
           </div>
-
         </div>
 
         {/* 생성 버튼 */}
@@ -304,7 +332,6 @@ export default function ProblemGeneratorPage() {
       {problems.length > 0 && (
         <div className="flex flex-col gap-6 animate-in fade-in duration-300">
           
-          {/* 시험지 툴바 */}
           <div className="flex flex-col sm:flex-row items-center justify-between bg-blue-50/70 p-4 rounded-2xl border border-blue-100 gap-4">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-blue-600" />
@@ -332,12 +359,9 @@ export default function ProblemGeneratorPage() {
             </div>
           </div>
 
-          {/* 문제 리스트 */}
           <div className="flex flex-col gap-6">
             {problems.map((p, idx) => (
               <div key={p.id || idx} className="bg-gray-50/60 p-6 rounded-2xl border border-gray-100 flex flex-col gap-4">
-                
-                {/* 문제 제목 */}
                 <div className="flex items-start gap-3">
                   <span className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-sm flex items-center justify-center shrink-0">
                     {idx + 1}
@@ -347,7 +371,6 @@ export default function ProblemGeneratorPage() {
                   </div>
                 </div>
 
-                {/* 객관식 보기 (있는 경우) */}
                 {p.options && p.options.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pl-10 text-sm text-gray-700">
                     {p.options.map((opt, optIdx) => (
@@ -358,7 +381,6 @@ export default function ProblemGeneratorPage() {
                   </div>
                 )}
 
-                {/* 정답 및 상세 해설 (토글시 노출) */}
                 {showAnswers && (
                   <div className="mt-2 pl-10 flex flex-col gap-2 pt-4 border-t border-gray-200/60">
                     <div className="text-sm font-bold text-blue-700">
@@ -375,11 +397,44 @@ export default function ProblemGeneratorPage() {
                     </div>
                   </div>
                 )}
-
               </div>
             ))}
           </div>
 
+        </div>
+      )}
+
+      {/* API 키 모달 */}
+      {isKeyModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <form onSubmit={handleSaveKey} className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-[#1d1d1f] text-center">OpenAI API 키 직접 설정</h3>
+            <p className="text-xs text-gray-500 leading-relaxed text-center">
+              Vercel 서버 환경변수 연동이 지연되는 경우, platform.openai.com에서 발급받은 <b>API 키(sk-...)</b>를 입력해 주시면 즉시 100% 정상 출제됩니다!
+            </p>
+            <input
+              type="password"
+              placeholder="sk-..."
+              value={tempKeyInput}
+              onChange={(e) => setTempKeyInput(e.target.value)}
+              className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-[#1d1d1f]"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setIsKeyModalOpen(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 shadow-sm"
+              >
+                저장 및 적용
+              </button>
+            </div>
+          </form>
         </div>
       )}
 

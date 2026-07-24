@@ -2,8 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw } from "lucide-react";
-
+import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw, Key, Check } from "lucide-react";
 import MathText from "@/components/MathText";
 
 interface Message {
@@ -23,7 +22,27 @@ export default function ChatPage() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [userApiKey, setUserApiKey] = useState("");
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [tempKeyInput, setTempKeyInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const savedKey = localStorage.getItem("user_openai_api_key");
+    if (savedKey) {
+      setUserApiKey(savedKey);
+      setTempKeyInput(savedKey);
+    }
+  }, []);
+
+  const handleSaveKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanKey = tempKeyInput.trim();
+    setUserApiKey(cleanKey);
+    localStorage.setItem("user_openai_api_key", cleanKey);
+    setIsKeyModalOpen(false);
+    alert(cleanKey ? "API 키가 성공적으로 저장되었습니다!" : "API 키가 초기화되었습니다.");
+  };
 
   const sampleQuestions = [
     "소금물 농도 공식 쉽게 알려줘!",
@@ -56,7 +75,6 @@ export default function ChatPage() {
     setIsLoading(true);
 
     try {
-      // API 메시지 포맷 변환
       const apiMessages = newMessages
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
@@ -64,7 +82,7 @@ export default function ChatPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages }),
+        body: JSON.stringify({ messages: apiMessages, userApiKey }),
       });
 
       const data = await res.json();
@@ -114,22 +132,36 @@ export default function ChatPage() {
             </div>
           </div>
           
-          <button
-            onClick={() =>
-              setMessages([
-                {
-                  id: "welcome",
-                  role: "assistant",
-                  content:
-                    "대화가 초기화되었습니다! 궁금한 수학 질답을 다시 입력해 보세요 😊",
-                },
-              ])
-            }
-            className="p-2 text-gray-400 hover:text-gray-700 rounded-full transition-colors"
-            title="대화 초기화"
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsKeyModalOpen(true)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors ${
+                userApiKey
+                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                  : "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200"
+              }`}
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>{userApiKey ? "API 키 설정됨" : "API 키 직접 입력"}</span>
+            </button>
+
+            <button
+              onClick={() =>
+                setMessages([
+                  {
+                    id: "welcome",
+                    role: "assistant",
+                    content:
+                      "대화가 초기화되었습니다! 궁금한 수학 질답을 다시 입력해 보세요 😊",
+                  },
+                ])
+              }
+              className="p-2 text-gray-400 hover:text-gray-700 rounded-full transition-colors"
+              title="대화 초기화"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -230,6 +262,40 @@ export default function ChatPage() {
         </div>
 
       </main>
+
+      {/* API 키 직접 입력 모달 */}
+      {isKeyModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <form onSubmit={handleSaveKey} className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-[#1d1d1f] text-center">OpenAI API 키 직접 설정</h3>
+            <p className="text-xs text-gray-500 leading-relaxed text-center">
+              Vercel 서버 환경변수 연동이 지연되는 경우, platform.openai.com에서 발급받은 <b>API 키(sk-...)</b>를 아래에 입력해 주시면 즉시 100% 정상 작동합니다!
+            </p>
+            <input
+              type="password"
+              placeholder="sk-..."
+              value={tempKeyInput}
+              onChange={(e) => setTempKeyInput(e.target.value)}
+              className="border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-[#1d1d1f]"
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setIsKeyModalOpen(false)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-3 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 shadow-sm"
+              >
+                저장 및 적용
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

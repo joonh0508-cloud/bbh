@@ -3,22 +3,22 @@ import OpenAI from "openai";
 
 export async function POST(req: Request) {
   try {
-    const rawKey = process.env.OPENAI_API_KEY || "";
+    const { curriculum, grade, majorUnit, minorUnit, difficulty, count, userApiKey } = await req.json();
+
+    const rawKey = userApiKey || process.env.OPENAI_API_KEY || "";
     const apiKey = rawKey.trim().replace(/^['"]|['"]$/g, "");
 
     if (!apiKey) {
       return NextResponse.json(
         {
           error:
-            "OPENAI_API_KEY 환경변수가 설정되지 않았거나 재배포가 필요합니다. Vercel Settings -> Environment Variables에서 OPENAI_API_KEY를 등록하고 Redeploy를 실행해 주세요.",
+            "OPENAI_API_KEY가 설정되지 않았습니다. 상단 '🔑 API 키 입력' 버튼을 누르시고 API 키(sk-...)를 직접 입력해 주세요.",
         },
         { status: 400 }
       );
     }
 
     const openai = new OpenAI({ apiKey });
-    const { curriculum, grade, majorUnit, minorUnit, difficulty, count } = await req.json();
-
     const problemCount = Math.min(Math.max(Number(count) || 5, 1), 30);
 
     const prompt = `
@@ -49,23 +49,38 @@ export async function POST(req: Request) {
 }
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "You are a professional math problem author for Korean schools. You must output pure valid JSON only.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 4000,
-    });
+    let rawResponse = "";
 
-    const rawResponse = completion.choices[0]?.message?.content || "";
+    try {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional math problem author for Korean schools. You must output pure valid JSON only.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+      });
+      rawResponse = completion.choices[0]?.message?.content || "";
+    } catch (modelErr: any) {
+      console.warn("gpt-4o-mini problem gen failed, fallback to gpt-3.5-turbo:", modelErr?.message);
+      const completion = await openai.chat.completions.create({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are a professional math problem author for Korean schools. You must output pure valid JSON only.",
+          },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 4000,
+      });
+      rawResponse = completion.choices[0]?.message?.content || "";
+    }
 
     let cleaned = rawResponse.trim();
     if (cleaned.startsWith("```json")) {
@@ -81,9 +96,9 @@ export async function POST(req: Request) {
 
     let msg = error?.message || "문제 생성 중 오류가 발생했습니다.";
     if (error?.status === 401 || error?.code === "invalid_api_key") {
-      msg = "유효하지 않은 OPENAI_API_KEY입니다. Vercel 환경변수의 API 키(sk-...)를 확인해 주세요.";
+      msg = "유효하지 않은 API 키입니다. '🔑 API 키 입력' 버튼을 눌러 올바른 API 키(sk-...)를 입력해 주세요.";
     } else if (error?.status === 429 || error?.code === "insufficient_quota") {
-      msg = "OpenAI 계정의 크레딧(잔액)이 부족합니다. platform.openai.com 결제 설정을 확인해 주세요.";
+      msg = "OpenAI 계정 크레딧(잔액)이 부족합니다. platform.openai.com 결제 설정을 확인해 주세요.";
     }
 
     return NextResponse.json({ error: msg }, { status: 400 });
