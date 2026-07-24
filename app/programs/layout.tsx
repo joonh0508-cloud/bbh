@@ -16,6 +16,7 @@ export default function ProgramsLayout({
   if (!isLoaded) return <div className="min-h-screen bg-gray-50" />;
 
   const tabs = [
+    { name: "AI 문제 은행", href: "/programs/generator" },
     { name: config.tab1Name, href: "/programs/dst" },
     { name: config.tab2Name, href: "/programs/saltwater" },
     { name: "에라토스테네스의 체", href: "/programs/sieve" },
@@ -48,6 +49,7 @@ export default function ProgramsLayout({
           {tabs.map((tab) => {
             const isActive = pathname === tab.href;
             const isPlaceholder = 
+              tab.href !== "/programs/generator" &&
               tab.href !== "/programs/dst" && 
               tab.href !== "/programs/saltwater" && 
               tab.href !== "/programs/sieve";
