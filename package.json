@@ -15,7 +15,8 @@
     "react-dom": "^18.2.0",
     "recharts": "^2.12.7",
     "@supabase/supabase-js": "^2.45.0",
-    "openai": "^4.52.0"
+    "openai": "^4.52.0",
+    "katex": "^0.16.11"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { ChevronLeft, Send, Sparkles, Bot, User, RefreshCw } from "lucide-react";
 
+import MathText from "@/components/MathText";
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -26,8 +28,8 @@ export default function ChatPage() {
   const sampleQuestions = [
     "소금물 농도 공식 쉽게 알려줘!",
     "거속시(거리·속력·시간) 관계가 뭐야?",
-    "에라토스테네스의 체 소수 찾는 방법 설명해줘!",
     "피타고라스 정리가 뭐야?",
+    "이차방정식 근의 공식 공식이 뭐야?",
   ];
 
   const scrollToBottom = () => {
@@ -150,13 +152,13 @@ export default function ChatPage() {
               )}
 
               <div
-                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed whitespace-pre-wrap ${
+                className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-5 py-3.5 text-sm leading-relaxed ${
                   msg.role === "user"
                     ? "bg-[#1d1d1f] text-white rounded-br-none shadow-sm"
                     : "bg-white text-[#1d1d1f] rounded-bl-none border border-gray-100 shadow-sm"
                 }`}
               >
-                {msg.content}
+                <MathText content={msg.content} />
               </div>
 
               {msg.role === "user" && (
