@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Settings } from "lucide-react";
+import { ChevronRight, Settings, Sparkles } from "lucide-react";
 import SettingsModal from "../components/SettingsModal";
 import { useConfig } from "./context/ConfigContext";
 
@@ -21,7 +21,11 @@ export default function Home() {
           채채의 수학
         </div>
         <nav className="flex items-center gap-4">
-          <Link href="/programs" className="text-sm font-medium text-[#0066cc] hover:text-blue-700 cursor-pointer transition-colors duration-200">
+          <Link href="/chat" className="text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-full transition-colors">
+            <Sparkles className="w-3.5 h-3.5" />
+            AI 챗봇
+          </Link>
+          <Link href="/programs" className="text-sm font-medium text-gray-700 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
             수학 프로그램
           </Link>
           <Link href="/board" className="text-sm text-gray-500 hover:text-[#1d1d1f] cursor-pointer transition-colors duration-200">
@@ -50,7 +54,17 @@ export default function Home() {
           {config.subDescription}
         </p>
 
-        {/* 기능 버튼들이 있던 자리 (삭제됨) */}
+        {/* AI 챗봇 이동 대표 버튼 */}
+        <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
+          <Link
+            href="/chat"
+            className="flex-1 flex items-center justify-center gap-2.5 px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02]"
+          >
+            <Sparkles className="w-5 h-5 text-yellow-300" />
+            <span>AI 수학 튜터에게 질문하기</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </div>
       </main>
 
       {/* 하단 푸터 영역 */}
