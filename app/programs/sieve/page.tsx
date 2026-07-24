@@ -89,7 +89,7 @@ export default function SieveProgram() {
       {/* 헤더 설명 영역 */}
       <div className="text-center md:text-left">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-3">
-          아리스토텔레스 / 에라토스테네스의 체
+          에라토스테네스의 체
         </div>
         <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f] mb-2">
           체(Sieve)로 소수(Prime Number) 걸러내기
