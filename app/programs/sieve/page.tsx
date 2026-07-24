@@ -1,17 +1,40 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Play, Pause, RotateCcw, ChevronRight, HelpCircle, CheckCircle2 } from "lucide-react";
+import { Play, Pause, RotateCcw, ChevronRight, CheckCircle2, Sliders } from "lucide-react";
+
+// n 이하의 소수 구하기 헬퍼 함수
+function getPrimesUpTo(limit: number): number[] {
+  const primes: number[] = [];
+  for (let i = 2; i <= limit; i++) {
+    let isPrime = true;
+    for (let j = 2; j * j <= i; j++) {
+      if (i % j === 0) {
+        isPrime = false;
+        break;
+      }
+    }
+    if (isPrime) primes.push(i);
+  }
+  return primes;
+}
 
 export default function SieveProgram() {
   const [maxNum, setMaxNum] = useState<number>(100);
   const [stepIndex, setStepIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [selectedNum, setSelectedNum] = useState<number | null>(null);
 
-  // 100 이하의 소수 단계별 주 소수들 (sqrt(100) 이하의 소수인 2, 3, 5, 7)
-  const primeSteps = [2, 3, 5, 7];
-  const maxStep = primeSteps.length + 1; // 0~4 단계 + 5(최종완료)
+  // sqrt(maxNum) 이하의 소수 단계 자동 계산
+  const limit = Math.floor(Math.sqrt(maxNum));
+  const primeSteps = getPrimesUpTo(limit);
+  const maxStep = primeSteps.length + 1; // 0 ~ primeSteps.length + 1(완료)
+
+  // maxNum 변경 시 초기화
+  const handleMaxNumChange = (newMax: number) => {
+    setIsPlaying(false);
+    setStepIndex(0);
+    setMaxNum(newMax);
+  };
 
   // 자동 재생 타이머
   useEffect(() => {
@@ -68,7 +91,6 @@ export default function SieveProgram() {
   const handleReset = () => {
     setIsPlaying(false);
     setStepIndex(0);
-    setSelectedNum(null);
   };
 
   const numbers = Array.from({ length: maxNum }, (_, i) => i + 1);
@@ -95,9 +117,49 @@ export default function SieveProgram() {
           체(Sieve)로 소수(Prime Number) 걸러내기
         </h2>
         <p className="text-gray-500">
-          고대 그리샤의 수학자 에라토스테네스가 고안한 소수 탐색 알고리즘입니다.
+          고대 그리스의 수학자 에라토스테네스가 고안한 소수 탐색 알고리즘입니다.
           소수의 배수들을 순차적으로 걸러내어 소수만 남깁니다.
         </p>
+      </div>
+
+      {/* 전체 수(N) 설정 패널 */}
+      <div className="bg-blue-50/70 border border-blue-100 p-5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-sm font-bold text-[#1d1d1f]">
+          <Sliders className="w-5 h-5 text-blue-600" />
+          <span>전체 수 범위 설정 (1 ~ {maxNum})</span>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {[30, 50, 100, 120, 150, 200].map((preset) => (
+            <button
+              key={preset}
+              onClick={() => handleMaxNumChange(preset)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                maxNum === preset
+                  ? "bg-blue-600 text-white shadow-sm"
+                  : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+              }`}
+            >
+              1 ~ {preset}
+            </button>
+          ))}
+          
+          {/* 직접 입력 */}
+          <div className="flex items-center gap-1 bg-white px-2 py-1 rounded-lg border border-gray-200 text-xs">
+            <span className="text-gray-400">직접입력:</span>
+            <input
+              type="number"
+              min="10"
+              max="300"
+              value={maxNum}
+              onChange={(e) => {
+                const val = Math.min(Math.max(parseInt(e.target.value) || 10, 10), 300);
+                handleMaxNumChange(val);
+              }}
+              className="w-12 text-center font-bold focus:outline-none text-[#1d1d1f]"
+            />
+          </div>
+        </div>
       </div>
 
       {/* 컨트롤 패널 */}
@@ -109,10 +171,10 @@ export default function SieveProgram() {
             {stepIndex === 0 && "1단계: 1은 소수가 아니므로 제외합니다."}
             {stepIndex > 0 && stepIndex <= primeSteps.length && (
               <>
-                <span className="text-blue-600 font-extrabold">{primeSteps[stepIndex - 1]}</span>의 배수를 체로 걸러냅니다.
+                <span className="text-blue-600 font-extrabold">{primeSteps[stepIndex - 1]}</span>의 배수를 체로 걸러냅니다. (√{maxNum} ≈ {limit} 이하의 소수)
               </>
             )}
-            {stepIndex === maxStep && "탐색 완료! 남은 모든 수들이 소수입니다."}
+            {stepIndex === maxStep && `탐색 완료! 1~${maxNum} 사이의 모든 소수들을 찾았습니다.`}
           </span>
         </div>
 
@@ -145,7 +207,7 @@ export default function SieveProgram() {
 
       </div>
 
-      {/* 수 그리드 렌더링 (1 ~ 100) */}
+      {/* 수 그리드 렌더링 */}
       <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 md:gap-3">
         {numbers.map((num) => {
           const state = getNumberState(num);
@@ -162,13 +224,12 @@ export default function SieveProgram() {
           }
 
           return (
-            <button
+            <div
               key={num}
-              onClick={() => setSelectedNum(num)}
               className={`h-11 md:h-12 rounded-xl border text-sm font-semibold flex items-center justify-center transition-all duration-300 ${bgClass}`}
             >
               {num}
-            </button>
+            </div>
           );
         })}
       </div>
@@ -195,7 +256,7 @@ export default function SieveProgram() {
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-blue-600" />
             <h3 className="text-base font-bold text-[#1d1d1f]">
-              현재까지 찾은 소수 ({confirmedPrimes.length}개)
+              1~{maxNum} 범위의 찾은 소수 ({confirmedPrimes.length}개)
             </h3>
           </div>
         </div>
