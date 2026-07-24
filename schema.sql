@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS public.posts (
   title text NOT NULL,
   author text NOT NULL,
   content text NOT NULL,
+  file_name text,
+  file_url text,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -17,3 +19,6 @@ CREATE POLICY "Allow public read access" ON public.posts FOR SELECT USING (true)
 
 -- 4. 누구나 글을 쓸 수 있도록 허용
 CREATE POLICY "Allow public insert access" ON public.posts FOR INSERT WITH CHECK (true);
+
+-- 5. 삭제 권한 허용
+CREATE POLICY "Allow public delete access" ON public.posts FOR DELETE USING (true);

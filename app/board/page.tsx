@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus, MessageSquare, Database } from "lucide-react";
+import { ChevronLeft, Plus, Database, Paperclip, Trash2, Download, FileText } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Post {
@@ -10,6 +10,8 @@ interface Post {
   title: string;
   author: string;
   content: string;
+  file_name?: string | null;
+  file_url?: string | null;
   created_at: string;
 }
 
@@ -18,7 +20,15 @@ export default function BoardPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 폼 상태 (첨부파일 포함)
   const [newPost, setNewPost] = useState({ title: "", author: "", content: "" });
+  const [attachedFile, setAttachedFile] = useState<{ name: string; url: string } | null>(null);
+
+  // 삭제용 비밀번호 모달 상태
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
 
   const fetchPosts = async () => {
     setIsLoading(true);
@@ -29,8 +39,7 @@ export default function BoardPage() {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.warn("Supabase fetch error (table might not exist yet):", error.message);
-        // DB 테이블이 미생성되었을 경우 로컬스토리지 백업 데이터 로드
+        console.warn("Supabase fetch error:", error.message);
         const storedPosts = localStorage.getItem("math-app-board");
         if (storedPosts) setPosts(JSON.parse(storedPosts));
       } else if (data) {
@@ -47,6 +56,28 @@ export default function BoardPage() {
     fetchPosts();
   }, []);
 
+  // 파일 선택 처리 (Data URL 변환)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 5MB 용량 제한 안내
+    if (file.size > 5 * 1024 * 1024) {
+      alert("파일 크기는 최대 5MB까지 업로드 가능합니다.");
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachedFile({
+        name: file.name,
+        url: reader.result as string,
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.title || !newPost.author || !newPost.content) {
@@ -57,25 +88,25 @@ export default function BoardPage() {
     setIsSubmitting(true);
 
     try {
+      const payload = {
+        title: newPost.title,
+        author: newPost.author,
+        content: newPost.content,
+        file_name: attachedFile ? attachedFile.name : null,
+        file_url: attachedFile ? attachedFile.url : null,
+      };
+
       const { data, error } = await supabase
         .from("posts")
-        .insert([
-          {
-            title: newPost.title,
-            author: newPost.author,
-            content: newPost.content,
-          },
-        ])
+        .insert([payload])
         .select();
 
       if (error) {
-        alert(`Supabase 저장 실패: ${error.message}\n(SQL Editor에서 posts 테이블을 먼저 생성했는지 확인해 주세요!)`);
+        alert(`Supabase 저장 실패: ${error.message}`);
         // 로컬스토리지 백업 저장
         const localPost: Post = {
           id: Date.now().toString(),
-          title: newPost.title,
-          author: newPost.author,
-          content: newPost.content,
+          ...payload,
           created_at: new Date().toISOString(),
         };
         const updated = [localPost, ...posts];
@@ -89,7 +120,39 @@ export default function BoardPage() {
     } finally {
       setIsSubmitting(false);
       setNewPost({ title: "", author: "", content: "" });
+      setAttachedFile(null);
       setIsFormOpen(false);
+    }
+  };
+
+  // 삭제 실행 (관리자 비밀번호 확인)
+  const handleDeletePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (deletePassword !== "admin123") {
+      setDeleteError("비밀번호가 올바르지 않습니다. 관리자만 삭제 가능합니다.");
+      return;
+    }
+
+    if (!deleteTargetId) return;
+
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .delete()
+        .eq("id", deleteTargetId);
+
+      if (error) {
+        alert(`삭제 실패: ${error.message}`);
+      } else {
+        setPosts((prev) => prev.filter((p) => p.id !== deleteTargetId));
+        alert("게시글이 삭제되었습니다.");
+      }
+    } catch (err) {
+      console.error("Error deleting post:", err);
+    } finally {
+      setDeleteTargetId(null);
+      setDeletePassword("");
+      setDeleteError("");
     }
   };
 
@@ -114,7 +177,7 @@ export default function BoardPage() {
           
           <button 
             onClick={() => setIsFormOpen(!isFormOpen)}
-            className="flex items-center gap-2 px-4 py-2 bg-[#1d1d1f] text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-[#1d1d1f] text-white rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors shadow-sm"
           >
             {isFormOpen ? "취소" : <><Plus className="w-4 h-4" />글쓰기</>}
           </button>
@@ -129,7 +192,7 @@ export default function BoardPage() {
           <Database className="w-5 h-5 shrink-0 mt-0.5 text-blue-500" />
           <p>
             현재 자료실은 <b>Supabase 실시간 클라우드 DB</b>와 연동되어 있습니다. <br className="hidden md:block" />
-            작성하신 글은 데이터베이스에 안전하게 저장되며 모든 사용자와 실시간으로 공유됩니다!
+            자료 등록 시 <b>첨부파일(문서, 이미지 등)</b>을 함께 업로드할 수 있으며, 삭제는 관리자 권한으로만 가능합니다.
           </p>
         </div>
 
@@ -162,6 +225,21 @@ export default function BoardPage() {
               rows={5}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-[#1d1d1f] resize-none"
             />
+
+            {/* 첨부파일 선택 입력 */}
+            <div className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+              <Paperclip className="w-4 h-4 text-gray-400 shrink-0" />
+              <input
+                type="file"
+                onChange={handleFileChange}
+                className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-white file:text-[#1d1d1f] file:shadow-xs hover:file:bg-gray-100 cursor-pointer"
+              />
+              {attachedFile && (
+                <span className="text-xs text-blue-600 font-semibold truncate max-w-[200px]">
+                  ✓ {attachedFile.name}
+                </span>
+              )}
+            </div>
             
             <div className="flex justify-end mt-2">
               <button 
@@ -187,25 +265,99 @@ export default function BoardPage() {
             </div>
           ) : (
             posts.map((post) => (
-              <div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between mb-3">
+              <div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative">
+                
+                {/* 상단 제목 및 삭제 버튼 */}
+                <div className="flex items-start justify-between gap-4 mb-3">
                   <h3 className="text-lg font-bold text-[#1d1d1f]">{post.title}</h3>
-                  <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
-                    {new Date(post.created_at).toLocaleDateString()}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
+                      {new Date(post.created_at).toLocaleDateString()}
+                    </span>
+                    {/* 관리자 전용 삭제 버튼 */}
+                    <button
+                      onClick={() => {
+                        setDeleteTargetId(post.id);
+                        setDeletePassword("");
+                        setDeleteError("");
+                      }}
+                      className="p-1.5 text-gray-300 hover:text-red-500 rounded-lg transition-colors"
+                      title="관리자 전용 삭제"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
+
+                {/* 내용 */}
                 <p className="text-sm text-gray-600 whitespace-pre-wrap mb-4">
                   {post.content}
                 </p>
-                <div className="text-xs font-medium text-gray-500">
+
+                {/* 첨부파일 다운로드 바 */}
+                {post.file_url && post.file_name && (
+                  <div className="mb-4 inline-flex items-center gap-2 bg-blue-50/70 border border-blue-100 px-3 py-2 rounded-xl text-xs">
+                    <FileText className="w-4 h-4 text-blue-600" />
+                    <span className="font-semibold text-blue-900">{post.file_name}</span>
+                    <a
+                      href={post.file_url}
+                      download={post.file_name}
+                      className="ml-2 flex items-center gap-1 text-blue-600 font-bold hover:underline"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      다운로드
+                    </a>
+                  </div>
+                )}
+
+                {/* 작성자 정보 */}
+                <div className="text-xs font-medium text-gray-500 pt-2 border-t border-gray-50">
                   작성자: <span className="text-[#1d1d1f]">{post.author}</span>
                 </div>
+
               </div>
             ))
           )}
         </div>
 
       </main>
+
+      {/* 관리자 삭제 확인 비밀번호 모달 */}
+      {deleteTargetId && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <form onSubmit={handleDeletePost} className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4">
+            <h3 className="text-lg font-bold text-[#1d1d1f] text-center">관리자 삭제 인증</h3>
+            <p className="text-xs text-gray-500 text-center">
+              게시글 삭제는 관리자만 가능합니다. <br /> 비밀번호를 입력해 주세요.
+            </p>
+            <input
+              type="password"
+              placeholder="관리자 비밀번호 (admin123)"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="border border-gray-200 rounded-xl px-4 py-2.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-[#1d1d1f]"
+              autoFocus
+            />
+            {deleteError && <p className="text-xs text-red-500 text-center">{deleteError}</p>}
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteTargetId(null)}
+                className="flex-1 py-2.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-xl hover:bg-gray-200"
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 shadow-sm"
+              >
+                삭제하기
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
     </div>
   );
 }
