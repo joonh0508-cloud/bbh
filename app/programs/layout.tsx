@@ -13,6 +13,7 @@ export default function ProgramsLayout({
 
   const tabs = [
     { name: "거리·속력·시간", href: "/programs/dst" },
+    { name: "소금물의 농도", href: "/programs/saltwater" },
     { name: "도형의 넓이 (예정)", href: "/programs/area" },
     { name: "함수 그래프 (예정)", href: "/programs/functions" },
   ];
@@ -41,7 +42,7 @@ export default function ProgramsLayout({
         <div className="max-w-5xl mx-auto px-6 flex items-center gap-6 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const isActive = pathname === tab.href;
-            const isPlaceholder = tab.href !== "/programs/dst";
+            const isPlaceholder = tab.href !== "/programs/dst" && tab.href !== "/programs/saltwater";
             
             return (
               <Link
