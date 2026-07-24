@@ -18,6 +18,7 @@ export default function ProgramsLayout({
   const tabs = [
     { name: config.tab1Name, href: "/programs/dst" },
     { name: config.tab2Name, href: "/programs/saltwater" },
+    { name: "에라토스테네스의 체", href: "/programs/sieve" },
     { name: config.tab3Name, href: "/programs/area" },
     { name: config.tab4Name, href: "/programs/functions" },
   ];
@@ -46,7 +47,10 @@ export default function ProgramsLayout({
         <div className="max-w-5xl mx-auto px-6 py-3 flex items-center gap-3 overflow-x-auto no-scrollbar">
           {tabs.map((tab) => {
             const isActive = pathname === tab.href;
-            const isPlaceholder = tab.href !== "/programs/dst" && tab.href !== "/programs/saltwater";
+            const isPlaceholder = 
+              tab.href !== "/programs/dst" && 
+              tab.href !== "/programs/saltwater" && 
+              tab.href !== "/programs/sieve";
             
             return (
               <Link
