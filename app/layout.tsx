@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ConfigProvider } from "./context/ConfigContext";
 
 // 폰트 설정: 자간을 좁게(-0.02em 등) 설정하여 애플 스타일처럼 렌더링되게 합니다.
 const inter = Inter({ subsets: ["latin"], variable: '--font-inter' });
@@ -17,7 +18,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${inter.variable} tracking-tight`}>{children}</body>
+      <body className={`${inter.variable} tracking-tight`}>
+        <ConfigProvider>
+          {children}
+        </ConfigProvider>
+      </body>
     </html>
   );
 }

@@ -1,7 +1,18 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { ChevronRight, Settings } from "lucide-react";
+import SettingsModal from "../components/SettingsModal";
+import { useConfig } from "./context/ConfigContext";
 
 export default function Home() {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const { config, isLoaded } = useConfig();
+
+  // 설정이 렌더링되기 전 깜빡임 방지
+  if (!isLoaded) return <div className="min-h-screen bg-gray-50" />;
+
   return (
     <div className="min-h-screen flex flex-col items-center">
       {/* 상단 헤더 영역 */}
@@ -29,27 +40,27 @@ export default function Home() {
           <span>새로운 교육 환경의 시작</span>
         </div>
 
-        {/* 메인 타이틀 */}
+        {/* 메인 타이틀 (동적) */}
         <h1 className="text-5xl md:text-7xl font-bold tracking-tighter mb-6 text-[#1d1d1f]">
-          수학이 쉬워지는 시간
+          {config.mainTitle}
         </h1>
         
-        {/* 서브 설명 */}
-        <p className="text-lg md:text-xl text-gray-500 mb-12 max-w-2xl leading-relaxed">
-          선생님과 학생 모두를 위한 직관적이고 깔끔한 학습 플랫폼입니다.
-          필요한 기능을 마음껏 추가해 보세요.
+        {/* 서브 설명 (동적) */}
+        <p className="text-lg md:text-xl text-gray-500 mb-12 max-w-2xl leading-relaxed whitespace-pre-wrap">
+          {config.subDescription}
         </p>
 
-        {/* 기능 추가를 위한 가짜(Placeholder) 버튼들 */}
+        {/* 기능 버튼들 */}
         <div className="flex flex-col sm:flex-row gap-4 w-full justify-center max-w-md">
-          {/* 주요 행동(Primary Action) 버튼 */}
-          <button className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-[#1d1d1f] hover:bg-gray-800 text-white rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
+          <Link href="/programs" className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-[#1d1d1f] hover:bg-gray-800 text-white rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-[1.02]">
             <span>시작하기</span>
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Link>
           
-          {/* 보조 행동(Secondary Action) 버튼: Glassmorphism 효과 적용 */}
-          <button className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-white/80 hover:bg-white text-[#1d1d1f] border border-gray-200 rounded-2xl shadow-sm backdrop-blur-md transition-all duration-300 transform hover:scale-[1.02]">
+          <button 
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex-1 flex items-center justify-center gap-2 px-8 py-4 bg-white/80 hover:bg-white text-[#1d1d1f] border border-gray-200 rounded-2xl shadow-sm backdrop-blur-md transition-all duration-300 transform hover:scale-[1.02]"
+          >
             <Settings className="w-4 h-4 text-gray-500" />
             <span>설정</span>
           </button>
@@ -66,6 +77,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* 설정 모달창 */}
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+      />
     </div>
   );
 }

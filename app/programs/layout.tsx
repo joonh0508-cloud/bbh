@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
+import { useConfig } from "../context/ConfigContext";
 
 export default function ProgramsLayout({
   children,
@@ -10,12 +11,15 @@ export default function ProgramsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { config, isLoaded } = useConfig();
+
+  if (!isLoaded) return <div className="min-h-screen bg-gray-50" />;
 
   const tabs = [
-    { name: "거리·속력·시간", href: "/programs/dst" },
-    { name: "소금물의 농도", href: "/programs/saltwater" },
-    { name: "도형의 넓이 (예정)", href: "/programs/area" },
-    { name: "함수 그래프 (예정)", href: "/programs/functions" },
+    { name: config.tab1Name, href: "/programs/dst" },
+    { name: config.tab2Name, href: "/programs/saltwater" },
+    { name: config.tab3Name, href: "/programs/area" },
+    { name: config.tab4Name, href: "/programs/functions" },
   ];
 
   return (
