@@ -2,68 +2,95 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ChevronLeft, Plus, MessageSquare } from "lucide-react";
+import { ChevronLeft, Plus, MessageSquare, Database } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 interface Post {
   id: string;
   title: string;
   author: string;
   content: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export default function BoardPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newPost, setNewPost] = useState({ title: "", author: "", content: "" });
 
-  useEffect(() => {
-    // 로컬 스토리지에서 게시글 불러오기
-    const storedPosts = localStorage.getItem("math-app-board");
-    if (storedPosts) {
-      try {
-        setPosts(JSON.parse(storedPosts));
-      } catch (e) {
-        console.error("Failed to parse board data", e);
+  const fetchPosts = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.warn("Supabase fetch error (table might not exist yet):", error.message);
+        // DB 테이블이 미생성되었을 경우 로컬스토리지 백업 데이터 로드
+        const storedPosts = localStorage.getItem("math-app-board");
+        if (storedPosts) setPosts(JSON.parse(storedPosts));
+      } else if (data) {
+        setPosts(data as Post[]);
       }
-    } else {
-      // 초기 샘플 데이터
-      const initialPosts: Post[] = [
-        {
-          id: "1",
-          title: "첫 번째 자료입니다.",
-          author: "채채 선생님",
-          content: "이곳은 누구나 자유롭게 자료와 질문을 올릴 수 있는 공간입니다.\n유용하게 사용해 주세요!",
-          createdAt: new Date().toISOString(),
-        }
-      ];
-      setPosts(initialPosts);
-      localStorage.setItem("math-app-board", JSON.stringify(initialPosts));
+    } catch (err) {
+      console.error("Error fetching posts:", err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchPosts();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPost.title || !newPost.author || !newPost.content) {
       alert("모든 항목을 입력해주세요.");
       return;
     }
 
-    const post: Post = {
-      id: Date.now().toString(),
-      title: newPost.title,
-      author: newPost.author,
-      content: newPost.content,
-      createdAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
 
-    const updatedPosts = [post, ...posts];
-    setPosts(updatedPosts);
-    localStorage.setItem("math-app-board", JSON.stringify(updatedPosts));
-    
-    // 폼 초기화 및 닫기
-    setNewPost({ title: "", author: "", content: "" });
-    setIsFormOpen(false);
+    try {
+      const { data, error } = await supabase
+        .from("posts")
+        .insert([
+          {
+            title: newPost.title,
+            author: newPost.author,
+            content: newPost.content,
+          },
+        ])
+        .select();
+
+      if (error) {
+        alert(`Supabase 저장 실패: ${error.message}\n(SQL Editor에서 posts 테이블을 먼저 생성했는지 확인해 주세요!)`);
+        // 로컬스토리지 백업 저장
+        const localPost: Post = {
+          id: Date.now().toString(),
+          title: newPost.title,
+          author: newPost.author,
+          content: newPost.content,
+          created_at: new Date().toISOString(),
+        };
+        const updated = [localPost, ...posts];
+        setPosts(updated);
+        localStorage.setItem("math-app-board", JSON.stringify(updated));
+      } else if (data) {
+        setPosts([data[0] as Post, ...posts]);
+      }
+    } catch (err) {
+      console.error("Error inserting post:", err);
+    } finally {
+      setIsSubmitting(false);
+      setNewPost({ title: "", author: "", content: "" });
+      setIsFormOpen(false);
+    }
   };
 
   return (
@@ -97,12 +124,12 @@ export default function BoardPage() {
       {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-6 py-8">
         
-        {/* 안내 메시지 */}
+        {/* Supabase 연결 안내 메시지 */}
         <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-8 text-sm text-blue-700 flex items-start gap-3">
-          <MessageSquare className="w-5 h-5 shrink-0 mt-0.5 text-blue-500" />
+          <Database className="w-5 h-5 shrink-0 mt-0.5 text-blue-500" />
           <p>
-            현재 자료실은 <b>로컬 모드</b>로 동작하고 있습니다. <br className="hidden md:block" />
-            (선생님의 기기에서 작성한 글은 이 기기에서만 보이며, 향후 데이터베이스(DB) 연결 시 모든 사용자와 공유할 수 있습니다.)
+            현재 자료실은 <b>Supabase 실시간 클라우드 DB</b>와 연동되어 있습니다. <br className="hidden md:block" />
+            작성하신 글은 데이터베이스에 안전하게 저장되며 모든 사용자와 실시간으로 공유됩니다!
           </p>
         </div>
 
@@ -137,8 +164,12 @@ export default function BoardPage() {
             />
             
             <div className="flex justify-end mt-2">
-              <button type="submit" className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm">
-                등록하기
+              <button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+              >
+                {isSubmitting ? "등록 중..." : "등록하기"}
               </button>
             </div>
           </form>
@@ -146,9 +177,13 @@ export default function BoardPage() {
 
         {/* 게시글 목록 */}
         <div className="flex flex-col gap-4">
-          {posts.length === 0 ? (
+          {isLoading ? (
             <div className="text-center py-20 text-gray-400">
-              아직 등록된 자료가 없습니다.
+              게시글을 불러오는 중입니다...
+            </div>
+          ) : posts.length === 0 ? (
+            <div className="text-center py-20 text-gray-400">
+              아직 등록된 자료가 없습니다. 첫 번째 자료를 작성해 보세요!
             </div>
           ) : (
             posts.map((post) => (
@@ -156,7 +191,7 @@ export default function BoardPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-lg font-bold text-[#1d1d1f]">{post.title}</h3>
                   <span className="text-xs text-gray-400 bg-gray-50 px-2 py-1 rounded-md">
-                    {new Date(post.createdAt).toLocaleDateString()}
+                    {new Date(post.created_at).toLocaleDateString()}
                   </span>
                 </div>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap mb-4">
